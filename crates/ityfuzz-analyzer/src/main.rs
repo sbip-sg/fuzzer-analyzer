@@ -1,12 +1,12 @@
 use clap::Parser;
 use eyre::Result;
-use plot::handle_plot_command;
 use run::handle_run_command;
 use std::env;
 use tracing::{Level, info};
 use tracing_subscriber::FmtSubscriber;
 use types::{Cli, Commands};
 
+#[cfg(feature = "plotting")]
 mod plot;
 mod run;
 mod types;
@@ -50,8 +50,16 @@ fn main() -> Result<()> {
             handle_run_command(args)?;
         }
         Commands::Plot(args) => {
-            info!("Executing 'plot' command...");
-            handle_plot_command(args)?;
+            #[cfg(feature = "plotting")]
+            {
+                info!("Executing 'plot' command...");
+                plot::handle_plot_command(args)?;
+            }
+            #[cfg(not(feature = "plotting"))]
+            {
+                eprintln!("Plot functionality is disabled. Rebuild with plotting feature enabled.");
+                std::process::exit(1);
+            }
         }
     }
 

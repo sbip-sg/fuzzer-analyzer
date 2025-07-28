@@ -1,2 +1,6 @@
 /target
 .aider*
+CLAUDE.md
+*.log
+raw-logs/
+.work-dirs/

@@ -1,4 +1,3 @@
-use crate::plot::aggregate_and_plot_data;
 use crate::types::RunArgs;
 use crate::types::StatsEntry;
 use csv::Writer;
@@ -99,17 +98,24 @@ pub fn handle_run_command(args: RunArgs) -> Result<()> {
                 pb.set_message(format!("Fuzzing contract: {}", contract_id));
 
                 let contract_files_glob = format!("{}/*", contract_dir_path.to_string_lossy());
-                let mut options = vec![];
-                for option in args.fuzzer_options.iter() {
-                    options.push(option.as_str());
+                
+                // Parse fuzzer options from string
+                let mut options: Vec<String> = args.fuzzer_options
+                    .split_whitespace()
+                    .map(|s| s.to_string())
+                    .collect();
+
+                options.push("-t".to_string());
+                options.push(contract_files_glob);
+                
+                if args.use_work_dir {
+                    let now = chrono::Utc::now().format("%Y-%m-%d_%H-%M-%S").to_string();
+                    let work_dir = format!(".work-dirs/{}/{}", now, contract_id);
+                    options.push("-w".to_string());
+                    options.push(work_dir);
                 }
 
-                let now = chrono::Utc::now().format("%Y-%m-%d_%H-%M-%S").to_string();
-                let work_dir = format!(".work-dirs/{}/{}", now, contract_id);
-                options.append(&mut vec!["-t", &contract_files_glob]);
-                options.append(&mut vec!["-w", &work_dir]);
-
-                match run_program_with_timeout(&args.fuzzer_path, &options[..], args.fuzz_timeout_seconds) {
+                match run_program_with_timeout(&args.fuzzer_path, &options, args.fuzz_timeout_seconds) {
                     Ok(log_content) => {
                         let folder = args.benchmark_base_dir.canonicalize().unwrap();
                         let folder = folder.file_name().unwrap_or_default().to_string_lossy();
@@ -168,7 +174,10 @@ pub fn handle_run_command(args: RunArgs) -> Result<()> {
     if all_contract_stats.lock().unwrap().is_empty() {
         info!("No data collected from any contracts. Cannot generate aggregate plot.");
     } else {
-        aggregate_and_plot_data(&all_contract_stats.lock().unwrap(), &args.output_dir, None)?;
+        #[cfg(feature = "plotting")]
+        crate::plot::aggregate_and_plot_data(&all_contract_stats.lock().unwrap(), &args.output_dir, None)?;
+        #[cfg(not(feature = "plotting"))]
+        info!("Plot generation skipped (plotting feature disabled). CSV data has been saved.");
     }
 
     pb.finish_with_message(format!(
@@ -180,7 +189,7 @@ pub fn handle_run_command(args: RunArgs) -> Result<()> {
 
 fn run_program_with_timeout(
     program_path: &str,
-    args: &[&str],
+    args: &[String],
     timeout_seconds: u64,
 ) -> Result<String> {
     info!(

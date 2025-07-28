@@ -29,13 +29,11 @@ pub struct RunArgs {
     pub fuzzer_path: String,
 
     /// Additional arguments to be added before the `-t <target-contract-folder>/*` argument for ityfuzz
+    /// Example: --fuzzer-options "evm --run-forever --pair-oracle --integer-overflow-oracle"
     #[arg(long,
-          default_values_t = vec![
-              "evm".to_string(),
-              "--run-forever".to_string(),
-          ],
-          value_name = "ARGS")]
-    pub fuzzer_options: Vec<String>,
+          default_value = "evm --run-forever",
+          value_name = "OPTIONS")]
+    pub fuzzer_options: String,
 
     /// Base directory containing benchmark contract directories (e.g., b1)
     #[arg(short, long, value_name = "DIR")]
@@ -48,6 +46,10 @@ pub struct RunArgs {
     /// Timeout in seconds for running the fuzzer on each contract
     #[arg(long, value_name = "SECONDS", default_value_t = 15)]
     pub fuzz_timeout_seconds: u64,
+
+    /// Specify a work directory for the fuzzer (if not set, no work directory is specified)
+    #[arg(long)]
+    pub use_work_dir: bool,
 }
 
 #[derive(Parser, Debug)]
