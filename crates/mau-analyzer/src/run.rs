@@ -83,8 +83,8 @@ pub fn handle_run_command(args: RunArgs) -> Result<()> {
 
         let contract_files_glob = format!("{}/*", contract_dir_path.to_string_lossy());
         let mut options = vec![];
-        for option in args.fuzzer_options.iter() {
-            options.push(option.as_str());
+        for option in args.fuzzer_options.split_whitespace() {
+            options.push(option);
         }
 
         let ptx_path = contract_dir_path.join("kernel.ptx");
@@ -120,7 +120,7 @@ pub fn handle_run_command(args: RunArgs) -> Result<()> {
                         contract_id, e
                     );
                 }
-                
+
                 // Check for CUDA system errors
                 if log_content.contains("SYSTEM ERROR : [Cuda]") {
                     if args.abort_on_cuda_error {
@@ -140,7 +140,7 @@ pub fn handle_run_command(args: RunArgs) -> Result<()> {
                         continue;
                     }
                 }
-                
+
                 if log_content.trim().is_empty() {
                     info!(
                         "No output from fuzzer for {}, skipping parsing (likely timeout or crash before output).",

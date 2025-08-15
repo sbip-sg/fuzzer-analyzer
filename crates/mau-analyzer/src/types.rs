@@ -70,7 +70,7 @@ pub struct RunArgs {
 
     /// Additional arguments to be added after the fuzzer_path
     #[arg(long)]
-    pub fuzzer_options: Vec<String>,
+    pub fuzzer_options: String,
 
     /// Base directory containing benchmark contract directories (e.g., b1)
     #[arg(short, long, value_name = "DIR")]
